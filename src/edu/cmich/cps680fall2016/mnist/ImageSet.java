@@ -4,6 +4,9 @@ import java.io.*;
 import java.util.NoSuchElementException;
 import java.util.zip.GZIPInputStream;
 
+/**
+ * A MNIST image set, parsed from a binary stream.
+ */
 public class ImageSet {
 
     public final int imageCnt, rowCnt, colCnt;
