@@ -1,0 +1,9 @@
+Database: http://yann.lecun.com/exdb/mnist/
+    ~60000 hand-written digits (0-9)
+    Normalized to 28x28 pixel, 8-bit grayscale images
+    The center of "mass" of each digit is in the center of the image
+    Data is provided in gzipped binary format, with multibyte fields in big-endian order
+
+Tensorflow tutorial: https://www.tensorflow.org/versions/r0.11/tutorials/mnist/beginners/index.html
+    A step-by-step overview of how to use a basic NN to classify this data set
+    We can use this to help write our own NN code.

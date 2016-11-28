@@ -1,0 +1,8 @@
+We intend to classify the images of handwritten digits in the MNIST database.  
+The database consists of a training set of ~60,000 grayscale images of 
+handwritten digits, and a test set of ~10,000 images.  We propose to build a 
+simple, single-layer neural network and train it via gradient descent.  
+Deliverables from this project include code for training and testing the 
+network, and key test results such as accuracy.
+
+- John Roush and Rowland Ogwara
