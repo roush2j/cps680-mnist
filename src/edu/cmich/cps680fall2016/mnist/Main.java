@@ -4,10 +4,13 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.Random;
 
+import static edu.cmich.cps680fall2016.mnist.SimpleNN.*;
+
 public class Main {
 
     public static void main(String[] args) throws IOException {
-        SimpleNN nn = new SimpleNN(new int[] { 28 * 28, 10 }, new Random());
+        SimpleNN nn = new SimpleNN(new int[] { 28 * 28, 10 }, 
+                new Activation[] { SOFTMAX }, new Random());
 
         ImageSet imgf = new ImageSet("data/train-images-idx3-ubyte.gz");
         LabelSet lblf = new LabelSet("data/train-labels-idx1-ubyte.gz");
