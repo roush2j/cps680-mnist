@@ -1,22 +1,33 @@
 package edu.cmich.cps680fall2016.mnist;
 
 import java.io.*;
+import java.util.Arrays;
+import java.util.Random;
 
 public class Main {
 
     public static void main(String[] args) throws IOException {
+        SimpleNN nn = new SimpleNN(new int[] { 28 * 28, 10 }, new Random());
+
         ImageSet imgf = new ImageSet("data/train-images-idx3-ubyte.gz");
         LabelSet lblf = new LabelSet("data/train-labels-idx1-ubyte.gz");
-        byte[] img = null;
+        float[][] vals = nn.valueArray();
         for (int i = 0; imgf.hasNextImage(); i++) {
-            img = imgf.nextImage(img);
+            if (i % 1000 == 0) System.out.println("Training on image " + i);
+            if (i > 0) break;
+
+            imgf.nextImage(vals[0]);
             byte label = lblf.nextLabel();
             System.out.println(label);
-            DispImage b = new DispImage(img, imgf.rowCnt, imgf.colCnt);
+            DispImage b = new DispImage(DispImage.floatPix(vals[0]),
+                    imgf.rowCnt, imgf.colCnt);
             String name = String.format("%05d-%1d.png", i, label);
             b.writePNG(new FileOutputStream(name));
             b.print(System.out);
-            if (i >= 10) break;
+
+            nn.apply(vals);
+            System.out.println(Arrays.toString(vals[1]));
+            nn.dump();
         }
     }
 

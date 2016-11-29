@@ -27,28 +27,65 @@ public final class DispImage {
     }
 
     /**
-     * Create an image from an array of floats in the range {@code 0.0 - 1.0},
-     * inclusive.
+     * Create an image from an array-like functor returning normalized floats.
      * 
      * @param pixels Pixel color values, in row-major order with the
-     *            upper-left-most pixel first.
+     *            upper-left-most pixel at 0.
      * @param rowCnt Number of rows (height).
      * @param colCnt Number of columns (width).
      */
-    public DispImage(float[] pixels, int rowCnt, int colCnt) {
+    public DispImage(PixelGen pixels, int rowCnt, int colCnt) {
         img = new BufferedImage(colCnt, rowCnt, BufferedImage.TYPE_BYTE_GRAY);
         DataBufferByte buf = (DataBufferByte) img.getRaster().getDataBuffer();
         byte[] rawbuf = buf.getData();
-        for (int i = 0; i < rowCnt * colCnt; i++) {
-            rawbuf[i] = (byte) (pixels[i] * 255);
+        for (int p = 0; p < rowCnt * colCnt; p++) {
+            double norm = pixels.getPixel(p);
+            rawbuf[p] = (byte) (Math.min(1, Math.max(0, norm)) * 255);
         }
+    }
+
+    /** An array-like functor for generating normalized pixel color values */
+    @FunctionalInterface public static interface PixelGen {
+
+        public float getPixel(int idx);
+
+        public default PixelGen stride(final int offset, final int stride) {
+            final PixelGen base = this;
+            return new PixelGen() {
+
+                @Override public float getPixel(int idx) {
+                    return base.getPixel(offset + stride * idx);
+                }
+            };
+        }
+
+        public default PixelGen normalize(final float min, final float max) {
+            final PixelGen base = this;
+            return new PixelGen() {
+
+                @Override public float getPixel(int idx) {
+                    float norm = (base.getPixel(idx) - min) / (max - min);
+                    return Math.min(max, Math.max(min, norm));
+                }
+            };
+        }
+
+    }
+
+    public static PixelGen floatPix(final float[] pixels) {
+        return new PixelGen() {
+
+            @Override public float getPixel(int offset) {
+                return pixels[offset];
+            }
+        };
     }
 
     /** Write this image to {@code out} in PNG format. */
     public void writePNG(OutputStream out) throws IOException {
         ImageIO.write(img, "png", out);
     }
-    
+
     /** Write this image to {@code out} as space-separated hex bytes. */
     public void print(PrintStream out) {
         for (int r = 0; r < img.getHeight(); r++) {

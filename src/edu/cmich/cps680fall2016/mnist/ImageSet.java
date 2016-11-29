@@ -35,8 +35,9 @@ public class ImageSet {
         this.in = new DataInputStream(mnistImageStream);
         int magic = in.readInt();
         if (magic != 2051)
-            throw new IOException("Invalid magic header: input stream does not "
-                    + "appear to be a valid MNIST image set");
+            throw new IOException(
+                    "Invalid magic header: input stream does not "
+                            + "appear to be a valid MNIST image set");
         this.imageCnt = in.readInt();
         this.rowCnt = in.readInt();
         this.colCnt = in.readInt();
@@ -48,8 +49,8 @@ public class ImageSet {
     }
 
     /**
-     * Return the next image in the set, as an array of {@link #rowCnt *
-     * #colCnt} pixels, one byte per pixel, in row-major order.
+     * Return the next image, as an array of {@code rowCnt*colCnt} pixels, one
+     * unsigned byte per pixel, in row-major order.
      */
     public byte[] nextImage(byte[] out) throws IOException {
         if (readCnt >= imageCnt) throw new NoSuchElementException();
@@ -59,8 +60,18 @@ public class ImageSet {
         return out;
     }
 
-    public byte[] nextImage() throws IOException {
-        return nextImage(null);
+    /**
+     * Return the next image, as an array of {@code rowCnt*colCnt} pixels, one
+     * float in the range [0-1] per pixel, in row-major order.
+     */
+    public float[] nextImage(float[] out) throws IOException {
+        if (readCnt >= imageCnt) throw new NoSuchElementException();
+        if (out == null) out = new float[rowCnt * colCnt];
+        for (int i = 0; i < rowCnt * colCnt; i++) {
+            out[i] = in.readUnsignedByte() / 255F;
+        }
+        readCnt++;
+        return out;
     }
 
     /** Return the 0-based array offset of the pixel at (r,c) */
