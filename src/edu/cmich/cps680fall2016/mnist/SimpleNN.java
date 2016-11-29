@@ -1,6 +1,5 @@
 package edu.cmich.cps680fall2016.mnist;
 
-import java.io.FileOutputStream;
 import java.util.Random;
 
 public class SimpleNN {
@@ -125,20 +124,14 @@ public class SimpleNN {
         // ... TODO
     }
 
-    public void dump() {
-        for (int w = 0; w < weights.length; w++) {
-            for (int q = 0; q < shape[w + 1]; q++) {
-                int R = 28, C = 28;
-                DispImage img = new DispImage(DispImage.floatPix(weights[w])
-                        .stride(q, shape[w + 1]).normalize(-1, 1), R, C);
-                String name = String.format("weight-%02d-%02d.png", w, q);
-                try {
-                    img.writePNG(new FileOutputStream(name));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+    /**
+     * Return a display image representation of the internal weights, for
+     * debugging.
+     */
+    DispImage weightImage(int widx) {
+        return new DispImage(
+                DispImage.floatPix(weights[widx]).normalize(-1, 1),
+                shape[widx], shape[widx + 1]);
     }
 
     /** Activation function for NN evaluation. */

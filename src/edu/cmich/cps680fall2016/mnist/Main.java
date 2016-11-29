@@ -31,7 +31,9 @@ public class Main {
             nn.apply(vals);
             out.println(new DispImage(DispImage.floatPix(vals[1]), 4, 25).scaled(8));
             out.println(new DispImage(DispImage.floatPix(vals[1]), 1, 10).scaled(8));
-            nn.dump();
+            for (int w = 0; w < vals.length - 1; w++) {
+                out.println(nn.weightImage(w));
+            }
         }
     }
 
