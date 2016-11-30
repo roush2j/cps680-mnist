@@ -1,6 +1,7 @@
 package edu.cmich.cps680fall2016.mnist;
 
 import java.awt.*;
+import java.awt.event.*;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import javax.swing.*;
@@ -11,6 +12,8 @@ public class LogWindow extends PrintStream {
 
     private final JFrame frame;
 
+    private final JScrollPane pane;
+
     private final JComponent content;
 
     /** Create and display a new console window */
@@ -20,7 +23,7 @@ public class LogWindow extends PrintStream {
 
         content = Box.createVerticalBox();
         content.setBorder(new EmptyBorder(2, 5, 2, 5));
-        JScrollPane pane = new JScrollPane(content);
+        pane = new JScrollPane(content);
         pane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         pane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
         pane.getViewport().setBackground(Color.white);
@@ -49,7 +52,7 @@ public class LogWindow extends PrintStream {
         private void appendText() {
             String text = toString();
             reset();
-            for (String line : text.split("\\n")) { 
+            for (String line : text.split("\\n")) {
                 // ridiculous hack, AWT labels are single-line only ...
                 JLabel lbl = new JLabel(line);
                 lbl.setAlignmentY(JComponent.TOP_ALIGNMENT);
@@ -73,6 +76,21 @@ public class LogWindow extends PrintStream {
         content.add(output);
         content.revalidate();
         content.repaint();
+        JScrollBar vertical = pane.getVerticalScrollBar();
+        vertical.setValue(vertical.getMaximum());
     }
 
+    public void anyKeyToClose() {
+        JLabel lbl = new JLabel("Press any key to close ...");
+        lbl.setAlignmentY(JComponent.TOP_ALIGNMENT);
+        lbl.setFont(Font.decode(Font.MONOSPACED));
+        lbl.setBackground(Color.lightGray);
+        lbl.setOpaque(true);
+        appendOutput(lbl);
+        frame.addKeyListener(new KeyAdapter() {
+            @Override public void keyTyped(KeyEvent e) {
+                frame.dispose();
+            }
+        });
+    }
 }

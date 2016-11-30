@@ -17,12 +17,12 @@ public class Main {
         float[][] err = nn.valueArray();
         float[] exp = new float[10];
 
-        for (int rep = 3; rep > 0; rep--) {
+        for (int rep = 1; rep > 0; rep--) {
             ImageSet imgf = new ImageSet("data/train-images-idx3-ubyte.gz");
             LabelSet lblf = new LabelSet("data/train-labels-idx1-ubyte.gz");
             for (int i = 0; imgf.hasNextImage(); i++) {
                 if (i % 1000 == 0) out.println("Training on image " + i);
-                //            if (i > 10000) break;
+                if (i > 10000) break;
 
                 byte label = lblf.nextLabel();
                 Arrays.fill(exp, 0);
@@ -64,6 +64,7 @@ public class Main {
         }
         out.format("Test Results: %6.2f%% correct\n", (correct * 100F)
                 / testcnt);
-    }
 
+        out.anyKeyToClose();
+    }
 }
