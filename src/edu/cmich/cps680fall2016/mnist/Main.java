@@ -3,7 +3,7 @@ package edu.cmich.cps680fall2016.mnist;
 import java.io.*;
 import java.util.Arrays;
 import java.util.Random;
-import static edu.cmich.cps680fall2016.mnist.SimpleNN.*;
+import static edu.cmich.cps680fall2016.mnist.Activation.*;
 
 public class Main {
 
