@@ -115,13 +115,77 @@ public class SimpleNN {
     /**
      * Train the neural network with an input, output pair.
      * 
-     * @param values An array of values from each layer of the network, where
-     *            {@code values[0]} is the input to the first layer and
-     *            {@code values[values.length - 1]} is the <b>expected</b>
-     *            output from the last layer.
+     * This is stochastic training - the network is updated after each
+     * input/output training example rather than waiting until the entire
+     * training set is run.
+     * 
+     * @param act An array of input activations for each layer of the network,
+     *            where {@code act[0]} is the input to the first layer and
+     *            {@code act[act.length-1]} is the output from the last layer.
+     * @param err Same structure as {@code act}, but stores the error at each
+     *            layer.
+     * @param expected An array containing the <b>expected</b> outputs from the
+     *            last layer.
+     * @param rate The back-propagation rate.
      */
-    public void train(float[][] values) {
-        // ... TODO
+    public void train(float[][] act, float[][] err, float[] expected, float rate) {
+        assert (act.length == shape.length && act[0].length == shape[0]);
+        assert (err.length == shape.length && err[0].length == shape[0]);
+        assert (expected.length == shape[shape.length - 1]);
+
+        // apply NN
+        for (int layeridx = 0; layeridx < weights.length; layeridx++) {
+            assert (act[layeridx + 1].length == shape[layeridx + 1]);
+            assert (err[layeridx + 1].length == shape[layeridx + 1]);
+
+            // compute weighted sum for next layer
+            final float[] w = weights[layeridx];
+            final float[] v = act[layeridx];
+            final float[] nv = err[layeridx + 1];
+            final int shapel = shape[layeridx], shapeln = shape[layeridx + 1];
+            System.arraycopy(w, 0, nv, 0, shapeln); // bias
+            for (int biased_ij = shapeln, i = 0; i < shapel; i++) {
+                final float v_i = v[i];
+                for (int j = 0; j < shapeln; j++, biased_ij++) {
+                    nv[j] += w[biased_ij] * v_i;
+                }
+            }
+
+            // compute activation function for next layer
+            actv[layeridx].activate(nv, act[layeridx + 1]);
+        }
+
+        // back-propagation
+        final int layermax = shape.length - 1;
+        for (int k = 0; k < shape[layermax]; k++) {
+            // compute error in output of last layer
+            err[layermax][k] = expected[k] - act[layermax][k];
+        }
+        for (int layeridx = layermax; layeridx > 0; layeridx--) {
+
+            // compute directed gradient of activation function along error vector
+            final float[] v = act[layeridx];
+            final float[] e = err[layeridx];
+            actv[layeridx - 1].dctDerivative(v, e, v);
+
+            // update weights and calculate error for previous layer
+            final float[] w = weights[layeridx - 1];
+            final float[] pv = act[layeridx - 1];
+            final float[] pe = err[layeridx - 1];
+            final int shapel = shape[layeridx], shapelp = shape[layeridx - 1];
+            for (int j = 0; j < shapel; j++) {
+                w[j] += rate * e[j];    // update bias weights
+            }
+            for (int biased_ij = shapel, i = 0; i < shapelp; i++) {
+                final float pv_i = pv[i];
+                float pe_i = 0;
+                for (int j = 0; j < shapel; j++, biased_ij++) {
+                    pe_i += w[biased_ij] * v[j];
+                    w[biased_ij] += rate * pv_i * e[j];
+                }
+                pe[i] = pe_i;
+            }
+        }
     }
 
     /**
@@ -138,27 +202,39 @@ public class SimpleNN {
     public static interface Activation {
 
         /**
-         * For each value in {@code values}, write an activation output in
-         * {@code out} in the range [0,1].
+         * Compute the activation function for the input vector, and place the
+         * output in the output vector. Input and output must be the same size,
+         * but each component of the output may depend on any or all components
+         * of the input.
          */
-        public void activate(float[] values, float[] out);
+        public void activate(float[] in, float[] out);
+
+        /**
+         * Compute the directional derivative of the activation function, i.e.
+         * the inner product of the gradient of the activation function (a
+         * tensor) with a direction vector. Input, direction, and output vectors
+         * must have the same size.
+         */
+        public default void dctDerivative(float[] in, float[] dir, float[] out) {
+            throw new UnsupportedOperationException("Not implemened yet.");
+        }
     }
 
     /** Passthrough activation, i.e. a no-op. */
     public static Activation PASSTHROUGH = new Activation() {
 
-        @Override public void activate(float[] values, float[] out) {
-            if (values == out) return;
-            System.arraycopy(values, 0, out, 0, values.length);
+        @Override public void activate(float[] in, float[] out) {
+            if (in == out) return;
+            System.arraycopy(in, 0, out, 0, in.length);
         }
     };
 
     /** Threshold activation, i.e. the Heaviside step function. */
     public static Activation THRESHOLD = new Activation() {
 
-        @Override public void activate(float[] values, float[] out) {
-            for (int i = 0; i < values.length; i++) {
-                out[i] = values[i] > 0 ? 1 : 0;
+        @Override public void activate(float[] in, float[] out) {
+            for (int i = 0; i < in.length; i++) {
+                out[i] = in[i] > 0 ? 1 : 0;
             }
         }
     };
@@ -166,9 +242,20 @@ public class SimpleNN {
     /** Logistic activation */
     public static Activation LOGISTIC = new Activation() {
 
-        @Override public void activate(float[] values, float[] out) {
-            for (int i = 0; i < values.length; i++) {
-                out[i] = (float) (1 / (1 + Math.exp(-values[i])));
+        @Override public void activate(float[] in, float[] out) {
+            for (int i = 0; i < in.length; i++) {
+                out[i] = (float) (1 / (1 + Math.exp(-in[i])));
+            }
+        }
+
+        @Override public void dctDerivative(float[] in, float[] dir, float[] out) {
+            // Each component of logistic output depends only on the corresponding
+            // component of the input.  Therefore all off-diagonal elements of 
+            // the gradient tensor are zero, and the directional derivative is
+            // just the regular derivative dotted with the direction vector.
+            for (int i = 0; i < in.length; i++) {
+                double val = 1 / (1 + Math.exp(-in[i]));
+                out[i] = (float) (val * (1 - val) * dir[i]);
             }
         }
     };
@@ -176,14 +263,14 @@ public class SimpleNN {
     /** Softmax activation, normalized exponential outputs */
     public static Activation SOFTMAX = new Activation() {
 
-        @Override public void activate(float[] values, float[] out) {
+        @Override public void activate(float[] in, float[] out) {
             double norm = 0;
-            for (int i = 0; i < values.length; i++) {
-                double v = Math.exp(values[i]);
+            for (int i = 0; i < in.length; i++) {
+                double v = Math.exp(in[i]);
                 out[i] = (float) v;
                 norm += v;
             }
-            for (int i = 0; i < values.length; i++) {
+            for (int i = 0; i < in.length; i++) {
                 out[i] /= norm;
             }
         }
