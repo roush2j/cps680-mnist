@@ -46,11 +46,11 @@ public class Main {
                 if (c % 5000 == 0) out.format("Training image %8d ...\n", c);
                 //
                 byte label = lbl.nextLabel();
-                Arrays.fill(exp, 0);
                 exp[label] = 1;
                 img.nextImage(act[0]);
                 //
                 nn.train(act, err, exp, rate);
+                exp[label] = 0;
             }
         }
     }
@@ -103,6 +103,8 @@ public class Main {
     public static void printTests(SimpleNN nn, int[] widths, int count)
             throws IOException {
         float[][] act = nn.valueArray();
+        float[] exp = new float[10];
+
         for (int c = 0; c < count; c++) {
             ImageSet img = new ImageSet("data/t10k-images-idx3-ubyte.gz");
             LabelSet lbl = new LabelSet("data/t10k-labels-idx1-ubyte.gz");
@@ -110,7 +112,9 @@ public class Main {
                 byte label = lbl.nextLabel();
                 img.nextImage(act[0]);
                 //
-                nn.apply(act);
+                exp[label] = 1;
+                float loss = nn.test(act, exp);
+                exp[label] = 0;
                 float[] output = act[act.length - 1];
                 int answer = label;
                 for (int i = 0; i < output.length; i++) {
@@ -129,7 +133,7 @@ public class Main {
                 if (answer != label) {
                     clbl = vgrpC(clbl, txtC("EXPECTED " + label, 0xE00000));
                 }
-                cmp.add(clbl);
+                cmp.add(vgrpC(clbl, "Loss: " + loss));
                 out.println(hgrpC(cmp.toArray()));
             }
         }

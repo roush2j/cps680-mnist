@@ -117,6 +117,20 @@ public class SimpleNN {
     }
 
     /**
+     * Test the neural network with an input, output pair.
+     * 
+     * @param values An array of values from each layer of the network, where
+     *            {@code values[0]} is the input to the first layer and
+     *            {@code values[values.length - 1]} is the output from the last
+     *            layer.
+     * @return the loss with respect to the expected values.
+     */
+    public float test(float[][] values, float[] expected) {
+        apply(values);
+        return loss.loss(values[shape.length - 1], expected);
+    }
+
+    /**
      * Train the neural network with an input, output pair.
      * 
      * This is stochastic training - the network is updated after each
