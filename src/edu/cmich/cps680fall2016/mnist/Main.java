@@ -11,7 +11,7 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         SimpleNN nn = new SimpleNN(new int[] { 28 * 28, 300, 10 },
-                new Activation[] { LOGISTIC, LOGISTIC }, new Random());
+                new Activation[] { LOGISTIC, SOFTMAX }, new Random());
 
         out.println("Training ...");
         train(nn, 10000);
