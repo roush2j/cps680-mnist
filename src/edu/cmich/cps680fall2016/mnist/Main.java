@@ -3,6 +3,7 @@ package edu.cmich.cps680fall2016.mnist;
 import java.io.*;
 import java.util.*;
 import static edu.cmich.cps680fall2016.mnist.Activation.*;
+import static edu.cmich.cps680fall2016.mnist.Loss.*;
 import static edu.cmich.cps680fall2016.mnist.LogWindow.*;
 
 public class Main {
@@ -13,10 +14,11 @@ public class Main {
         int[] shape = { 28 * 28, 300, 10 };
         int[] widths = { 28, 30, 10 };
         Activation[] actv = { LOGISTIC, LOGISTIC };
-        SimpleNN nn = new SimpleNN(shape, actv, new Random());
+        Loss loss = MEAN_SQUARED_ERR;
+        SimpleNN nn = new SimpleNN(shape, actv, loss, new Random());
 
         out.printhr("Training ...");
-        train(nn, 60000);
+        train(nn, 60000, 0.05F);
 
         out.printhr("Trained Weights ...");
         printWeights(nn, widths, 10);
@@ -31,11 +33,11 @@ public class Main {
         out.anyKeyToClose();
     }
 
-    public static void train(SimpleNN nn, int count) throws IOException {
+    public static void train(SimpleNN nn, int count, float rate)
+            throws IOException {
         float[][] act = nn.valueArray();
         float[][] err = nn.valueArray();
         float[] exp = new float[10];
-        float rate = 0.1F;
 
         for (int c = 0; c < count; c++) {
             ImageSet img = new ImageSet("data/train-images-idx3-ubyte.gz");
@@ -88,6 +90,7 @@ public class Main {
                 float[] output = act[act.length - 1];
                 int answer = label;
                 for (int i = 0; i < output.length; i++) {
+                    if (i == label) continue;
                     if (output[i] >= output[answer]) answer = i;
                 }
                 if (answer == label) correctcnt++;
@@ -111,6 +114,7 @@ public class Main {
                 float[] output = act[act.length - 1];
                 int answer = label;
                 for (int i = 0; i < output.length; i++) {
+                    if (i == label) continue;
                     if (output[i] >= output[answer]) answer = i;
                 }
                 //
