@@ -1,26 +1,32 @@
 package edu.cmich.cps680fall2016.mnist;
 
 import java.io.*;
-import java.util.Arrays;
-import java.util.Random;
+import java.util.*;
 import static edu.cmich.cps680fall2016.mnist.Activation.*;
+import static edu.cmich.cps680fall2016.mnist.LogWindow.*;
 
 public class Main {
 
     public static LogWindow out = new LogWindow("Output Log");
 
     public static void main(String[] args) throws IOException {
-        SimpleNN nn = new SimpleNN(new int[] { 28 * 28, 300, 10 },
-                new Activation[] { LOGISTIC, SOFTMAX }, new Random());
+        int[] shape = { 28 * 28, 300, 10 };
+        int[] widths = { 28, 30, 10 };
+        Activation[] actv = { LOGISTIC, LOGISTIC };
+        SimpleNN nn = new SimpleNN(shape, actv, new Random());
 
-        out.println("Training ...");
-        train(nn, 10000);
+        out.printhr("Training ...");
+        train(nn, 60000);
 
-        test(nn, 20, true);
+        out.printhr("Trained Weights ...");
+        printWeights(nn, widths, 10);
 
-        out.println("Testing ...");
-        float results = test(nn, 10000, false);
-        out.format("Test Errors: %6.2f%% incorrect\n", (1 - results) * 100F);
+        out.printhr("Example Tests ...");
+        printTests(nn, widths, 10);
+
+        out.printhr("Testing ...");
+        float results = test(nn, 10000);
+        out.format("Error Rate: %6.2f%% incorrect\n", (1 - results) * 100F);
 
         out.anyKeyToClose();
     }
@@ -47,8 +53,25 @@ public class Main {
         }
     }
 
-    public static float test(SimpleNN nn, int count, boolean print)
-            throws IOException {
+    public static void printWeights(SimpleNN nn, int[] widths, int limit) {
+        for (int lidx = 0; lidx < nn.shape.length - 1; lidx++) {
+            List<Object> cmp = new ArrayList<>();
+            String lblprefix = "[L" + lidx + "] -> L" + (lidx + 1) + "_";
+            for (int i = 0; i < Math.min(limit, nn.shape[lidx + 1]); i++) {
+                DispImage img = new DispImage( //
+                        DispImage.floatPix(nn.weights[lidx]) //
+                                .normalize(-1, 1) //
+                                .stride(i, nn.shape[lidx + 1]), //
+                        nn.shape[lidx] / widths[lidx], widths[lidx]);
+                cmp.add(vgrpC(img.scaled(4), lblprefix + i));
+            }
+            int rem = nn.shape[lidx + 1] - limit;
+            if (rem > 0) cmp.add(rem + " more ...");
+            out.println(hgrpC(cmp.toArray()));
+        }
+    }
+
+    public static float test(SimpleNN nn, int count) throws IOException {
         float[][] act = nn.valueArray();
         int correctcnt = 0;
 
@@ -68,22 +91,43 @@ public class Main {
                     if (output[i] >= output[answer]) answer = i;
                 }
                 if (answer == label) correctcnt++;
-                //
-                if (print) {
-                    out.println(label);
-                    for (float[] a : act) {
-                        int h = (a.length + img.colCnt - 1) / img.colCnt;
-                        int w = a.length / h;
-                        DispImage d = new DispImage(DispImage.floatPix(a), h, w);
-                        out.println(d.scaled(6));
-                    }
-                    out.print("Classifier result: " + answer);
-                    if (answer != label) out.print(" !! EXPECTED " + label);
-                    out.println();
-                }
             }
         }
 
         return correctcnt / (float) count;
+    }
+
+    public static void printTests(SimpleNN nn, int[] widths, int count)
+            throws IOException {
+        float[][] act = nn.valueArray();
+        for (int c = 0; c < count; c++) {
+            ImageSet img = new ImageSet("data/t10k-images-idx3-ubyte.gz");
+            LabelSet lbl = new LabelSet("data/t10k-labels-idx1-ubyte.gz");
+            for (; img.hasNextImage() && lbl.hasNextLabel() && c < count; c++) {
+                byte label = lbl.nextLabel();
+                img.nextImage(act[0]);
+                //
+                nn.apply(act);
+                float[] output = act[act.length - 1];
+                int answer = label;
+                for (int i = 0; i < output.length; i++) {
+                    if (output[i] >= output[answer]) answer = i;
+                }
+                //
+                List<Object> cmp = new ArrayList<>();
+                for (int i = 0; i < act.length; i++) {
+                    DispImage im = new DispImage( //
+                            DispImage.floatPix(act[i]), //
+                            act[i].length / widths[i], widths[i]);
+                    cmp.add(vgrpC(im.scaled(4), "L" + i));
+                }
+                Object clbl = "Classifier result: " + answer;
+                if (answer != label) {
+                    clbl = vgrpC(clbl, txtC("EXPECTED " + label, 0xE00000));
+                }
+                cmp.add(clbl);
+                out.println(hgrpC(cmp.toArray()));
+            }
+        }
     }
 }

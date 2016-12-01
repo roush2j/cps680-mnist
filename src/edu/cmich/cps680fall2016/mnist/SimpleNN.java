@@ -5,17 +5,17 @@ import java.util.Random;
 public class SimpleNN {
 
     /** The number of inputs/neurons in each layer */
-    private final int[] shape;
+    public final int[] shape;
 
     /**
      * Weight matrices for each successive pair of layers (0->1, 1->2, ...).
      * Each element {@code i} has size {@code (shape[i] + 1) * shape[i+1]},
      * containing weights in {@code [i]-major} order.
      */
-    private final float[][] weights;
+    public final float[][] weights;
 
     /** The activation function between each successive pair of layers. */
-    private final Activation[] actv;
+    public final Activation[] actv;
 
     /**
      * Create a new NN with all weights initialized to 0.
@@ -186,15 +186,5 @@ public class SimpleNN {
                 pe[i] = pe_i;
             }
         }
-    }
-
-    /**
-     * Return a display image representation of the internal weights, for
-     * debugging.
-     */
-    DispImage weightImage(int widx) {
-        return new DispImage(
-                DispImage.floatPix(weights[widx]).normalize(-1, 1),
-                shape[widx], shape[widx + 1]);
     }
 }
