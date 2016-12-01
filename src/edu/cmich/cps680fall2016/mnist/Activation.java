@@ -8,6 +8,9 @@ public interface Activation {
      * output in the output vector. Input and output must be the same size, but
      * each component of the output may depend on any or all components of the
      * input.
+     * 
+     * <b>Note:</b> {@code in} and {@code out} may refer to the same array
+     * object.
      */
     public void activate(float[] in, float[] out);
 
@@ -16,6 +19,9 @@ public interface Activation {
      * inner product of the gradient of the activation function (a tensor) with
      * a direction vector. Input, direction, and output vectors must have the
      * same size.
+     * 
+     * <b>Note:</b> {@code in} and {@code out} may refer to the same array
+     * object.
      */
     public default void dctDerivative(float[] in, float[] dir, float[] out) {
         throw new UnsupportedOperationException("Not implemened yet.");
@@ -106,15 +112,16 @@ public interface Activation {
             //  dg_j(z) = g_j(z) * SUM over all k!=j of: g_k(z) * (d_j - d_k)
             // This is as stable as I could make it.
             double norm = 0;
+            double[] ein = new double[in.length];
             for (int k = 0; k < in.length; k++) {
-                norm += Math.exp(in[k]);
+                norm += (ein[k] = Math.exp(in[k]));
             }
             for (int j = 0; j < out.length; j++) {
-                final double g_j = Math.exp(in[j]) / norm;
+                final double g_j = ein[j] / norm;
                 double dg_j = 0;
                 for (int k = 0; k < dir.length; k++) {
                     if (k == j) continue;
-                    final double g_k = Math.exp(in[k]) / norm;
+                    final double g_k = ein[k] / norm;
                     dg_j += g_k * (dir[j] - dir[k]);
                 }
                 out[j] = (float) (g_j * dg_j);
