@@ -41,6 +41,10 @@ public interface Loss {
                 out[j] = -2 * (expected[j] - in[j]);
             }
         }
+
+        @Override public String toString() {
+            return "mean-square-error";
+        }
     };
 
     /**
@@ -74,6 +78,10 @@ public interface Loss {
                 if (expected[j] == 0) out[j] = 0;
                 else out[j] = -expected[j] / in[j];
             }
+        }
+        
+        @Override public String toString() {
+            return "cross-entropy";
         }
     };
 
@@ -127,6 +135,10 @@ public interface Loss {
                 final double gz_j = Math.exp(in[j]) / norm;
                 out[j] = (float) (gz_j * sum - expected[j]);
             }
+        }
+        
+        @Override public String toString() {
+            return "softmax/cross-entropy";
         }
     };
 }

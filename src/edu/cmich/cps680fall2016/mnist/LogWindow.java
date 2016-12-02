@@ -125,7 +125,7 @@ public class LogWindow extends PrintStream {
             }
             cmp.setAlignmentY(JComponent.CENTER_ALIGNMENT);
             box.add(cmp);
-            box.add(Box.createHorizontalStrut(3));
+            box.add(Box.createHorizontalStrut(5));
         }
         return box;
     }

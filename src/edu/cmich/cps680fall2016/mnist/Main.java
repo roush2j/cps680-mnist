@@ -1,10 +1,10 @@
 package edu.cmich.cps680fall2016.mnist;
 
-import java.io.*;
-import java.util.*;
 import static edu.cmich.cps680fall2016.mnist.Activation.*;
-import static edu.cmich.cps680fall2016.mnist.Loss.*;
 import static edu.cmich.cps680fall2016.mnist.LogWindow.*;
+import static edu.cmich.cps680fall2016.mnist.Loss.*;
+import java.io.IOException;
+import java.util.*;
 
 public class Main {
 
@@ -76,13 +76,8 @@ public class Main {
 
         out = new LogWindow("MNIST Output Log");
         out.printhr("Network Parameters");
-        out.format("Input   :%10s %5d\n", "", shape[0]);
-        for (int i = 1; i < lmax; i++) {
-            out.format("Hidden %d:%10s %5d\n", i, args[2 * i + 1], shape[i]);
-        }
-        out.format("Output  :%10s %5d\n", args[2 * lmax - 1], shape[lmax]);
-        out.format("Loss    :%10s\n", args[2 * lmax + 1]);
         SimpleNN nn = new SimpleNN(shape, actv, loss, new Random());
+        printShape(nn, widths);
 
         out.printhr("Training ...");
         out.format("%d examples with rate = %f\n", trainingcnt, learningrate);
@@ -99,6 +94,39 @@ public class Main {
         out.format("Error Rate: %6.2f%% incorrect\n", err * 100F);
 
         out.anyKeyToClose();
+    }
+
+    private static String layerName(SimpleNN nn, int lidx) {
+        if (lidx == 0) return "Input";
+        else if (lidx < nn.actv.length) return "Hidden Layer " + lidx;
+        else if (lidx == nn.actv.length) return "Output Layer";
+        else return null;
+    }
+
+    /**
+     * Print the shape parameters of a neural network.
+     * 
+     * @param nn The network to train
+     * @param widths The width of the weight plots for each layer.
+     */
+    public static void printShape(SimpleNN nn, int[] widths) {
+        List<Object> cmp = new ArrayList<>();
+        for (int lidx = 0; lidx < widths.length; lidx++) {
+            int w = widths[lidx], h = nn.shape[lidx] / w;
+            byte[] checker = new byte[w * h];
+            for (int i = 0; i < w * h; i++) {
+                int square = ((i % w) + (i / w)) % 2 == 0 ? 0x20 : 0xF0;
+                checker[i] = (byte) square;
+            }
+            Object img = new DispImage(checker, h, w).scaled(4);
+            String sizestr = String.format("%dx%d = %d", w, h, w * h);
+            String nm = layerName(nn, lidx) + ":";
+            if (lidx == 0) cmp.add(vgrpC(nm, img, sizestr));
+            else cmp.add(vgrpC(nm, nn.actv[lidx - 1].toString(), img, sizestr));
+            cmp.add(" "); // spacer
+        }
+        cmp.add(vgrpC("Loss Function: ", nn.loss.toString()));
+        out.println(hgrpC(cmp.toArray()));
     }
 
     /**
@@ -133,21 +161,21 @@ public class Main {
     /**
      * Print the weight parameters of a neural network.
      * 
-     * @param nn The network to train
+     * @param nn The network to print
      * @param widths The width of the weight plots for each layer.
      * @param limit The maximum number of weight plots to show for each layer.
      */
     public static void printWeights(SimpleNN nn, int[] widths, int limit) {
         for (int lidx = 0; lidx < nn.shape.length - 1; lidx++) {
             List<Object> cmp = new ArrayList<>();
-            String lblprefix = "[L" + lidx + "] -> L" + (lidx + 1) + "_";
+            cmp.add(layerName(nn, lidx) + " -> ");
             for (int i = 0; i < Math.min(limit, nn.shape[lidx + 1]); i++) {
-                DispImage img = new DispImage( //
-                        DispImage.floatPix(nn.weights[lidx]) //
-                                .normalize(-1, 1) //
-                                .stride(i, nn.shape[lidx + 1]), //
-                        nn.shape[lidx] / widths[lidx], widths[lidx]);
-                cmp.add(vgrpC(img.scaled(4), lblprefix + i));
+                int w = widths[lidx], h = nn.shape[lidx] / w;
+                DispImage img = new DispImage(DispImage
+                        .floatPix(nn.weights[lidx]).normalize(-1, 1)
+                        .stride(i, nn.shape[lidx + 1]), h, w);
+                cmp.add(vgrpC(layerName(nn, lidx + 1) + "[" + i + "]",
+                        img.scaled(4)));
             }
             int rem = nn.shape[lidx + 1] - limit;
             if (rem > 0) cmp.add(rem + " more ...");
@@ -158,7 +186,7 @@ public class Main {
     /**
      * Test a neural network using examples from the MNIST testing data.
      * 
-     * @param nn The network to train
+     * @param nn The network to test
      * @param count The number of examples to test
      * @return The error rate (fraction of incorrectly classified examples)
      * @throws IOException if the data files are missing or unreadable
@@ -188,7 +216,7 @@ public class Main {
      * Print example test results for a neural network using examples from the
      * MNIST testing data.
      * 
-     * @param nn The network to train
+     * @param nn The network to test
      * @param widths The width of the activation plot for each layer.
      * @param count The number of examples to test
      * @throws IOException if the data files are missing or unreadable
@@ -212,10 +240,11 @@ public class Main {
                 //
                 List<Object> cmp = new ArrayList<>();
                 for (int i = 0; i < act.length; i++) {
-                    DispImage im = new DispImage( //
-                            DispImage.floatPix(act[i]), //
-                            act[i].length / widths[i], widths[i]);
-                    cmp.add(vgrpC(im.scaled(4), "L" + i));
+                    int w = widths[i], h = act[i].length / w;
+                    DispImage im = new DispImage(DispImage.floatPix(act[i]), h,
+                            w);
+                    cmp.add(vgrpC(layerName(nn, i), im.scaled(4)));
+                    cmp.add(" "); // spacer
                 }
                 Object clbl = "Classifier result: " + answer;
                 if (answer != label) {

@@ -39,6 +39,10 @@ public interface Activation {
             if (dir == out) return;
             System.arraycopy(dir, 0, out, 0, dir.length);
         }
+
+        @Override public String toString() {
+            return "passthrough";
+        }
     };
 
     /** Logistic activation */
@@ -71,6 +75,10 @@ public interface Activation {
                 double val = 1 / (1 + Math.exp(-in[j]));
                 out[j] = (float) (val * (1 - val) * dir[j]);
             }
+        }
+        
+        @Override public String toString() {
+            return "logistic";
         }
     };
 
@@ -126,6 +134,10 @@ public interface Activation {
                 }
                 out[j] = (float) (g_j * dg_j);
             }
+        }
+        
+        @Override public String toString() {
+            return "softmax";
         }
     };
 }
