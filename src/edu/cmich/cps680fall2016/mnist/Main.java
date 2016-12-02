@@ -11,10 +11,10 @@ public class Main {
     public static LogWindow out = new LogWindow("Output Log");
 
     public static void main(String[] args) throws IOException {
-        int[] shape = { 28 * 28, 300, 10 };
-        int[] widths = { 28, 30, 10 };
-        Activation[] actv = { LOGISTIC, LOGISTIC };
-        Loss loss = MEAN_SQUARED_ERR;
+        int[] shape = { 28 * 28, 10 };
+        int[] widths = { 28, 10 };
+        Activation[] actv = { PASSTHROUGH };
+        Loss loss = SOFTMAX_CROSS_ENTROPY;
         SimpleNN nn = new SimpleNN(shape, actv, loss, new Random());
 
         out.printhr("Training ...");
