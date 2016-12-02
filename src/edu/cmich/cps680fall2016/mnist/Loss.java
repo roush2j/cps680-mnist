@@ -33,12 +33,12 @@ public interface Loss {
 
         @Override public void gradient(float[] in, float[] expected, float[] out) {
             // The gradient of the MSE can be written as:
-            //  L'_k(z,e) = -2 * (e_k - z_k)
+            //  L'_j(z,e) = -2 * (e_j - z_j)
             // Note that the contribution to MSE from each component of the input
             // is independent of the other components, so the components of the
             // gradient are independent of each other as well.
-            for (int k = 0; k < in.length; k++) {
-                out[k] = -2 * (expected[k] - in[k]);
+            for (int j = 0; j < in.length; j++) {
+                out[j] = -2 * (expected[j] - in[j]);
             }
         }
     };
@@ -57,24 +57,22 @@ public interface Loss {
 
         @Override public float loss(float[] in, float[] expected) {
             // The cross-entropy of e with respect to z is defined as:
-            //  L(e,z) = - SUM over all k of: e_k * log2(z_k)
+            //  L(e,z) = - SUM over all k of: e_k * log(z_k)
             double loss = 0;
             for (int k = 0; k < in.length; k++) {
                 loss -= expected[k] * Math.log(in[k]);
             }
-            loss /= Math.log(2);
             return (float) loss;
         }
 
         @Override public void gradient(float[] in, float[] expected, float[] out) {
             // The gradient of the cross-entropy of e with respect to z is:
-            //  L'_k(e,z) = - (1/log(2)) e_k / z_k
+            //  L'_j(e,z) = - e_j / z_j
             // As with MSE, the components of the gradient are independent.
             // NOTE: This function suffers from severe numerical instabilities
-            final float niln2 = (float) (-1 / Math.log(2));
-            for (int k = 0; k < in.length; k++) {
-                if (expected[k] == 0) out[k] = 0;
-                else out[k] = (niln2 * expected[k]) / in[k];
+            for (int j = 0; j < in.length; j++) {
+                if (expected[j] == 0) out[j] = 0;
+                else out[j] = -expected[j] / in[j];
             }
         }
     };
@@ -90,44 +88,44 @@ public interface Loss {
 
         @Override public float loss(float[] in, float[] expected) {
             // The cross-entropy of e with respect to the softmax of z:
-            //  L(e,z) = - SUM over all k of: e_k * log2(g_k(z))
+            //  L(e,z) = - SUM over all k of: e_k * log(exp(z_k) / N)
             // where:
-            //  g_k(z) = exp(z_k) / (SUM over all i of: exp(z_i))
-            // and thus:
             //       N = SUM over all i of: exp(z_i)
-            //  L(e,z) = - (1/log(2)) SUM over all k of: e_k * log(exp(z_k) / N)
-            //         = - (1/log(2)) SUM over all k of: e_k * log(exp(z_k)) - log(N)
-            //         = - (1/log(2)) SUM over all k of: e_k * z_k - log(N)
+            // and thus:
+            //  L(e,z) = - SUM over all k of: e_k * (log(exp(z_k)) - log(N))
+            //         = - SUM over all k of: (e_k * z_k - e_k * log(N))
             // or, finally:
-            //  L(e,z) = (1/log(2)) * (count(z)*log(N) - SUM over all k of: e_k * z_k)
-            double norm = 0, dot = 0;
+            //  L(e,z) = - SUM over all k of: e_k * z_k
+            //              + log(N) * SUM over all k of: e_k 
+            double norm = 0, dot = 0, sum = 0;
             for (int k = 0; k < in.length; k++) {
+                sum  += expected[k];
                 norm += Math.exp(in[k]);
                 dot += expected[k] * in[k];
             }
-            double loss = (in.length * Math.log(norm) - dot) / Math.log(2);
+            double loss = sum * Math.log(norm) - dot;
             return (float) loss;
         }
 
         @Override public void gradient(float[] in, float[] expected, float[] out) {
-            // The gradient of the cross-entropy of e with respect to the softmax of z:
-            //  L'_k(e,z) = - (1/log(2)) * SUM over all k!=j of: (e_j * g_k(z) - e_k * g_j(z))
-            // where:
-            //     g_k(z) = exp(z_k) / (SUM over all i of: exp(z_i))
-            double norm = 0;
-            double[] ein = new double[in.length];
+            // The gradient of the normalization factor N is:
+            //   L'_j(e,z) = d/dz_j( - SUM over all k of: e_k * z_k )
+            //                 + d/dz_j( log(N) * SUM over all k of: e_k  )
+            //             = -e_j + d/dz_j( log(N) ) * SUM over all k of: e_k
+            //             = -e_j + (1/N)*d/dz_j(N) * SUM over all k of: e_k
+            // Since:
+            //  (d/dz_j) N = (d/dz_j) SUM over all i of: exp(z_i)
+            //             = exp(z_j)
+            // We have:
+            //   L'_j(e,z) = -e_j + (exp(z_j)/N)*SUM over all k of: e_k
+            double norm = 0, sum = 0;
             for (int k = 0; k < in.length; k++) {
-                norm += (ein[k] = Math.exp(in[k]));
+                sum  += expected[k];
+                norm += Math.exp(in[k]);
             }
-            norm *= -Math.log(2);
             for (int j = 0; j < out.length; j++) {
-                final double ein_j = ein[j];
-                double dg_j = 0;
-                for (int k = 0; k < expected.length; k++) {
-                    if (k == j) continue;
-                    dg_j += expected[j] * ein[k] - expected[k] * ein_j;
-                }
-                out[j] = (float) (dg_j / norm);
+                final double gz_j = Math.exp(in[j]) / norm;
+                out[j] = (float) (gz_j * sum - expected[j]);
             }
         }
     };
