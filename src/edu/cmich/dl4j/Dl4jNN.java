@@ -53,11 +53,11 @@ public class Dl4jNN {
                     .build())
             .layer(1, new DenseLayer.Builder() //create the second input layer
                     .nIn(500)
-                    .nOut(100)
+                    .nOut(500)
                     .build())
             .layer(2, new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD) //create hidden layer
                     .activation("softmax")
-                    .nIn(100)
+                    .nIn(500)
                     .nOut(outputNum)
                     .build())
             .pretrain(false).backprop(true) //use backpropagation to adjust weights

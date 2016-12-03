@@ -9,6 +9,11 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 
+/**
+ * An iterator for mnist image and label
+ * @author Ogwara O. Rowland
+ *
+ */
 public class MnistIterator implements DataSetIterator{
 	
 	/**
