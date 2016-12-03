@@ -1,2 +1,4 @@
 # java binaries
 *.class
+/bin/
+/target/
