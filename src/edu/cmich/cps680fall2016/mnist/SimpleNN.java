@@ -17,6 +17,9 @@ public class SimpleNN {
     /** The activation function between each successive pair of layers. */
     public final Activation[] actv;
 
+    /** The loss function used to evaluate the output of the final layer. */
+    public final Loss loss;
+
     /**
      * Create a new NN with all weights initialized to 0.
      * 
@@ -24,7 +27,7 @@ public class SimpleNN {
      * @param actvFuncs An array containing the activation function between each
      *            layer.
      */
-    public SimpleNN(int[] shape, Activation[] actvFuncs) {
+    public SimpleNN(int[] shape, Activation[] actvFuncs, Loss lossFunc) {
         assert (shape.length >= 2);
         assert (actvFuncs.length == shape.length - 1);
 
@@ -35,6 +38,7 @@ public class SimpleNN {
             weights[layeridx] = new float[wcnt];
         }
         this.actv = actvFuncs.clone();
+        this.loss = lossFunc;
     }
 
     /**
@@ -43,8 +47,8 @@ public class SimpleNN {
      * 
      * @see #SimpleNN(int[], Activation[])
      */
-    public SimpleNN(int[] shape, Activation[] actvFuncs, Random rand) {
-        this(shape, actvFuncs);
+    public SimpleNN(int[] shape, Activation[] actvF, Loss lossF, Random rand) {
+        this(shape, actvF, lossF);
 
         // initialize weights with random values
         for (float[] w : weights) {
@@ -113,6 +117,20 @@ public class SimpleNN {
     }
 
     /**
+     * Test the neural network with an input, output pair.
+     * 
+     * @param values An array of values from each layer of the network, where
+     *            {@code values[0]} is the input to the first layer and
+     *            {@code values[values.length - 1]} is the output from the last
+     *            layer.
+     * @return the loss with respect to the expected values.
+     */
+    public float test(float[][] values, float[] expected) {
+        apply(values);
+        return loss.loss(values[shape.length - 1], expected);
+    }
+
+    /**
      * Train the neural network with an input, output pair.
      * 
      * This is stochastic training - the network is updated after each
@@ -157,10 +175,7 @@ public class SimpleNN {
 
         // back-propagation
         final int layermax = shape.length - 1;
-        for (int k = 0; k < shape[layermax]; k++) {
-            // compute error in output of last layer
-            err[layermax][k] = expected[k] - act[layermax][k];
-        }
+        loss.gradient(act[layermax], expected, err[layermax]); // err of last layer
         for (int layeridx = layermax; layeridx > 0; layeridx--) {
 
             // compute directed gradient of activation function along error vector
@@ -174,14 +189,14 @@ public class SimpleNN {
             final float[] pe = err[layeridx - 1];
             final int shapel = shape[layeridx], shapelp = shape[layeridx - 1];
             for (int j = 0; j < shapel; j++) {
-                w[j] += rate * e[j];    // update bias weights
+                w[j] -= rate * e[j];    // update bias weights
             }
             for (int biased_ij = shapel, i = 0; i < shapelp; i++) {
                 final float pv_i = pv[i];
                 float pe_i = 0;
                 for (int j = 0; j < shapel; j++, biased_ij++) {
                     pe_i += w[biased_ij] * v[j];
-                    w[biased_ij] += rate * pv_i * e[j];
+                    w[biased_ij] -= rate * pv_i * e[j];
                 }
                 pe[i] = pe_i;
             }

@@ -30,7 +30,7 @@ public class LogWindow extends PrintStream {
         pane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
         pane.getViewport().setBackground(Color.white);
         frame = new JFrame(title);
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setContentPane(pane);
         frame.setSize(800, 600);
         frame.setVisible(true);
@@ -125,7 +125,7 @@ public class LogWindow extends PrintStream {
             }
             cmp.setAlignmentY(JComponent.CENTER_ALIGNMENT);
             box.add(cmp);
-            box.add(Box.createHorizontalStrut(3));
+            box.add(Box.createHorizontalStrut(5));
         }
         return box;
     }
