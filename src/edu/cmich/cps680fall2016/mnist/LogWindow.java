@@ -3,8 +3,10 @@ package edu.cmich.cps680fall2016.mnist;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
+import java.awt.image.BufferedImage;
+import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.*;
 
@@ -170,5 +172,24 @@ public class LogWindow extends PrintStream {
                 frame.dispose();
             }
         });
+    }
+
+    /** Render the contents of the log as a PNG file */
+    public void writePNG(OutputStream out) throws IOException {
+        try {
+            final BufferedImage[] im = new BufferedImage[1];
+            SwingUtilities.invokeAndWait(new Runnable() {
+                @Override public void run() {
+                    im[0] = new BufferedImage(content.getWidth(), content
+                            .getHeight(), BufferedImage.TYPE_INT_ARGB);
+                    content.print(im[0].createGraphics());
+                }
+            });
+            ImageIO.write(im[0], "png", out);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
