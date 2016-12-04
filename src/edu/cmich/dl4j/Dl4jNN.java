@@ -25,15 +25,14 @@ public class Dl4jNN {
 
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 
-		MnistIterator trainingSet = new MnistIterator(new MnistDataSet("data/train-images-idx3-ubyte.gz", "data/train-labels-idx1-ubyte.gz"));
-		MnistIterator testSet = new MnistIterator(new MnistDataSet("data/t10k-images-idx3-ubyte.gz", "data/t10k-labels-idx1-ubyte.gz"));
+		MnistIterator trainingSet = new MnistIterator(new MnistDataSet("data/train-images-idx3-ubyte.gz", "data/train-labels-idx1-ubyte.gz"), 512);
+		MnistIterator testSet = new MnistIterator(new MnistDataSet("data/t10k-images-idx3-ubyte.gz", "data/t10k-labels-idx1-ubyte.gz"), 512);
 		
 		final int numRows = 28;
         final int numColumns = 28;
         int outputNum = 10; // number of output classes
         int rngSeed = 123; // random number seed for reproducibility
-        int numEpochs = 5; // number of epochs to perform
-        double rate = 0.0015; // learning rate
+        int numEpochs = 10; // number of epochs to perform
 
 
         log.info("Build model....");
@@ -41,31 +40,34 @@ public class Dl4jNN {
             .seed(rngSeed) //include a random seed for reproducibility
             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT) // use stochastic gradient descent as an optimization algorithm
             .iterations(1)
-            .activation("relu")
-            .weightInit(WeightInit.XAVIER)
-            .learningRate(rate) //specify the learning rate
-            .updater(Updater.NESTEROVS).momentum(0.98) //specify the rate of change of the learning rate.
-            .regularization(true).l2(rate * 0.005) // regularize learning model
+            .learningRate(0.006) //specify the learning rate
+            .updater(Updater.NESTEROVS).momentum(0.9) //specify the rate of change of the learning rate.
+            .regularization(true).l2(1e-4) // regularize learning model
             .list()
             .layer(0, new DenseLayer.Builder() //create the first input layer.
                     .nIn(numRows * numColumns)
-                    .nOut(500)
+                    .nOut(300)
+                    .weightInit(WeightInit.XAVIER)
+                    .activation("relu")
                     .build())
-            .layer(1, new DenseLayer.Builder() //create the second input layer
-                    .nIn(500)
-                    .nOut(500)
-                    .build())
-            .layer(2, new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD) //create hidden layer
+//            .layer(1, new DenseLayer.Builder() //create the second input layer
+//                    .nIn(300)
+//                    .nOut(300)
+//                    .activation("relu")
+//                    .weightInit(WeightInit.XAVIER)
+//                    .build())
+            .layer(2, new OutputLayer.Builder(LossFunction.MSE) //create hidden layer
                     .activation("softmax")
-                    .nIn(500)
+                    .nIn(300)
                     .nOut(outputNum)
+                    .weightInit(WeightInit.XAVIER)
                     .build())
             .pretrain(false).backprop(true) //use backpropagation to adjust weights
             .build();
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
-        model.setListeners(new ScoreIterationListener(5));  //print the score with every iteration
+        model.setListeners(new ScoreIterationListener(15));  //print the score with every iteration
 
         log.info("Train model....");
         for( int i=0; i<numEpochs; i++ ){

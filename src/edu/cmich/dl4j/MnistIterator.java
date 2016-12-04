@@ -21,9 +21,16 @@ public class MnistIterator implements DataSetIterator{
 	 */
 	private static final long serialVersionUID = -4643932469799209747L;
 	private MnistDataSet mds;
+	
+	private int batchSize = 64;
 
 	public MnistIterator(MnistDataSet mds) {
+		this(mds, 64);
+	}
+	
+	public MnistIterator(MnistDataSet mds, int batchSize) {
 		this.mds = mds;
+		this.batchSize = batchSize;
 	}
 
 	@Override
@@ -33,7 +40,7 @@ public class MnistIterator implements DataSetIterator{
 
 	@Override
 	public DataSet next() {
-		return next(64);
+		return next(batchSize);
 	}
 
 	@Override
