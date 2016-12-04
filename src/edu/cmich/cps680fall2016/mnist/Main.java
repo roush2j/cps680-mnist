@@ -92,7 +92,8 @@ public class Main {
         out.printhr("Testing ...");
         float err = test(nn, 10000);
         out.format("Error Rate: %6.2f%% incorrect\n", err * 100F);
-
+        
+        out.writePNG(System.out);
         out.anyKeyToClose();
     }
 
