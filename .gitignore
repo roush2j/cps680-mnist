@@ -1,2 +1,6 @@
 # java binaries
 *.class
+*.jar
+
+# reference materials
+refs/

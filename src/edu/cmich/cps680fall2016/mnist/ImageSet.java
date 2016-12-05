@@ -22,7 +22,16 @@ public class ImageSet {
      * @throws IOException
      */
     public ImageSet(String mnistImageFile) throws IOException {
-        this(new GZIPInputStream(new FileInputStream(mnistImageFile), 4096));
+        this(new GZIPInputStream(fileStream(mnistImageFile), 4096));
+    }
+
+    private static InputStream fileStream(String filename)
+            throws FileNotFoundException {
+        File file = new File(filename);
+        if (file.exists()) return new FileInputStream(file);
+        InputStream stream = ImageSet.class.getResourceAsStream("/" + filename);
+        if (stream == null) throw new FileNotFoundException(filename);
+        else return stream;
     }
 
     /**

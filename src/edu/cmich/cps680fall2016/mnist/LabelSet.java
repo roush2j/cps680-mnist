@@ -22,7 +22,16 @@ public class LabelSet {
      * @throws IOException
      */
     public LabelSet(String mnistLabelFile) throws IOException {
-        this(new GZIPInputStream(new FileInputStream(mnistLabelFile)));
+        this(new GZIPInputStream(fileStream(mnistLabelFile)));
+    }
+
+    private static InputStream fileStream(String filename)
+            throws FileNotFoundException {
+        File file = new File(filename);
+        if (file.exists()) return new FileInputStream(file);
+        InputStream stream = ImageSet.class.getResourceAsStream("/" + filename);
+        if (stream == null) throw new FileNotFoundException(filename);
+        else return stream;
     }
 
     /**
