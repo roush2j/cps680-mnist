@@ -97,7 +97,7 @@ public class MnistDataSet {
 			imageData.readFully(imgSrc, 0, imgSrc.length);
 			float[] img = new float[imgSrc.length];
 			for (int i = 0; i < imgSrc.length; i++) {
-				img[i] = imgSrc[i]/255f;
+				img[i] = (((int)imgSrc[i]) & 0xFF) /255.0f;
 			}
 			int rb = labelData.readUnsignedByte();
 			label[rb] = 1.0f;

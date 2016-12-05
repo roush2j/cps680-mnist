@@ -1,5 +1,6 @@
 package edu.cmich.dl4j;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
@@ -13,6 +14,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
@@ -40,27 +42,24 @@ public class Dl4jNN {
             .seed(rngSeed) //include a random seed for reproducibility
             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT) // use stochastic gradient descent as an optimization algorithm
             .iterations(1)
+            .weightInit(WeightInit.XAVIER)
+            .activation("relu")
             .learningRate(0.006) //specify the learning rate
             .updater(Updater.NESTEROVS).momentum(0.9) //specify the rate of change of the learning rate.
             .regularization(true).l2(1e-4) // regularize learning model
             .list()
             .layer(0, new DenseLayer.Builder() //create the first input layer.
                     .nIn(numRows * numColumns)
-                    .nOut(300)
-                    .weightInit(WeightInit.XAVIER)
-                    .activation("relu")
+                    .nOut(800)
                     .build())
-//            .layer(1, new DenseLayer.Builder() //create the second input layer
-//                    .nIn(300)
-//                    .nOut(300)
-//                    .activation("relu")
-//                    .weightInit(WeightInit.XAVIER)
-//                    .build())
-            .layer(2, new OutputLayer.Builder(LossFunction.MSE) //create hidden layer
+            .layer(1, new DenseLayer.Builder() //create the second input layer
+                    .nIn(800)
+                    .nOut(800)
+                    .build())
+            .layer(2, new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD) //create hidden layer
                     .activation("softmax")
-                    .nIn(300)
+                    .nIn(800)
                     .nOut(outputNum)
-                    .weightInit(WeightInit.XAVIER)
                     .build())
             .pretrain(false).backprop(true) //use backpropagation to adjust weights
             .build();
@@ -85,7 +84,8 @@ public class Dl4jNN {
         }
 
         log.info(eval.stats());
-        log.info("****************Example finished********************");
+        
+        ModelSerializer.writeModel(model, new File("mnist-model.vec"), true);
 		
 
 	}
