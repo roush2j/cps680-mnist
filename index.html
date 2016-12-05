@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+
+    <title>MNIST Image Classification via Neural Networks</title>
+    <meta name="description" content="Term Project, CPS 680 Fall 2016">
+    <meta name="author" content="John Roush and Rowland Ogwara">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="reveal.js-3.2.0/css/reveal.css">
+    <link rel="stylesheet" href="reveal.js-3.2.0/css/theme/serif.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="reveal.js-3.2.0/css/highlight.github.css">
+
+    <!-- Printing and PDF exports
+        To print: 
+            add "?print-pdf" to the url.  
+            the rendered HTML may appear to overlap; this is normal.
+            set the page size to the desired output aspect ratio (e.g. landscape)
+            adjust output margins to 0
+            print
+    -->
+    <script>
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        document.printing = window.location.search.match( /print-pdf/gi );
+        link.href = document.printing ? 'reveal.js-3.2.0/css/print/pdf.css' : 'reveal.js-3.2.0/css/print/paper.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+    
+    <!--[if lt IE 9]>
+    <script src="lib/js/html5shiv.js"></script>
+    <![endif]-->
+    
+    <style>
+        table.details td, table.details th { font-size: 24px; }
+        .reveal { 
+            font-size: 30px;
+        }
+        .reveal table th,
+        .reveal table td {
+            vertical-align: middle;
+        }
+        .reveal table.plain th,
+        .reveal table.plain td {
+            border: none;
+        }
+        .reveal blockquote {
+            width: 90%;
+        }
+        .reveal pre code {
+            max-height: 600px;
+        }
+        .reveal dfn {
+            font-weight: bold;
+        }
+    </style>
+    <style>
+        .eqn {
+            page-break-inside: avoid;
+            white-space: nowrap;
+        }
+        .eqn sub,
+        .eqn sup {
+            font-size: 60%;
+        }
+        span.series {
+            display: inline-block;
+            font-size: 120%;
+            vertical-align: middle;
+            text-align: center;
+        }
+        .series>sup, 
+        .series>sub {
+            display: block;
+            margin: 0;
+            font-size: 50%;
+        }
+        .frac {
+            display: inline-block;
+            vertical-align: middle;
+            text-align: center;
+        }
+        .frac>sup {
+            display: block;
+            border-bottom: 1px solid black;
+            font-size: 100%;
+        }
+        .frac>sub {
+            display: block;
+            font-size: 100%;
+        }
+        div.eqn, table.eqn {
+            page-break-inside: avoid;
+            padding-left: 10px;
+        }
+        table.eqn td {
+            vertical-align: middle;
+            text-align: center;
+        }
+        table.eqn td:first-child {
+            text-align: right;
+        }
+        table.eqn td:last-child {
+            text-align: left;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="reveal">
+    <div class="slides">
+    
+    <section>
+        <h1>MNIST Image Classification</h1>
+        <h2>with Neural Networks</h2>
+        <h6>John Roush and Rowland Ogwara</h6>
+        <h6>CMICH CPS 680 &middot; Fall 2016</h6>
+    </section>
+    
+    <section>
+        <h2>Simple Neural Network</h2>
+        <p>A <em>feed-forward</em>, <em>fully-connected</em> neural network.</p>
+        <p>Written from first principles in Java.</p>
+        <p>Arbitrary network structure (size and number of layers).</p>
+        <p>(Limited) choice of activation and loss functions.</p>
+        <p>Trained using <em>stochastic</em> back-propagation.</p>
+    </section>
+        
+    <section>
+        <h2>Mock-up of useage:</h2>
+        <pre><code class="lang-java" data-trim>
+public class SimpleNN {
+
+    /** Create a new NN with all weights initialized to 0. */
+    public SimpleNN(int[] shape, Activation[] actvFuncs, Loss lossFunc);
+
+    /** Apply the neural network to an input. */
+    public void apply(float[][] values);
+
+    /** Test the neural network with an input, output pair. */
+    public float test(float[][] values, float[] expected);
+
+    /**
+     * Train the neural network with an input, output pair.
+     * 
+     * This is stochastic training - the network is updated after each
+     * input/output training example rather than waiting until the entire
+     * training set is run.
+     */
+    public void train(float[][] act, float[][] err, float[] expected, float rate);
+}
+
+public static void main(String[] args) {
+    SimpleNN nn = new SimpleNN(/*...*/);
+    for (ExampleImage i : examples) {
+        nn.train(/* ... */);
+    }
+    for (TestImage i : tests) {
+        nn.test(/* ... */);
+    }
+}
+        </code></pre>
+    </section>
+    
+    <section>
+        <h2>Activation function: Logistic</h2>
+        <p>The <dfn>logistic</dfn> function forms an S-shaped curve, mapping inputs to the range [0,1].</p>
+        <p>The activation of each unit is independent of others in the same layer.</p>
+        <table class='eqn'><tr>
+            <td>g<sub>k</sub>(<b>z</b>)</td>
+            <td> = </td>
+            <td><span class="frac"><sup>1</sup><sub>1 + exp(-z<sub>k</sub>)</sub></span></td>
+        </tr></table>
+        <img class="plain" src="results/Logistic-curve.svg" height=350px>
+    </section>
+    
+    <section>
+        <h2>Activation function: Softmax</h2>
+        <p>The <dfn>softmax</dfn> function is an exponential curve.</p>
+        <p>It is <em>normalized</em>, so that the activation of all units in a layer sums to 1.</p>
+        <table class='eqn plain'><tr>
+            <td>g<sub>k</sub>(<b>z</b>)</td>
+            <td> = </td>
+            <td><span class="frac"><sup>exp(z<sub>k</sub>)</sup>
+                <sub><span class="series"><sup>&nbsp;</sup>Σ<sub>i=1</sub></span>  
+                    <span>exp(z<sub>i</sub>)</span></sub>
+            </span></td>
+        </tr></table>
+    </section>
+    
+    <section>
+        <h2>Loss functions: MSE</h2>
+        <p>The <dfn>mean-squared-error</dfn> loss function is the sum over all <br>
+        the output units of their difference from the expected value. </p>
+        <table class='eqn plain'><tr>
+            <td>L(<b>y</b>, <b>a</b>)</td>
+            <td> = </td>
+            <td><span class="series"><sup>&nbsp;</sup>Σ<sub>k=1</sub></span>  
+                    <span>(y<sub>k</sub> - a<sub>k</sub>)</span></td>
+        </tr></table> 
+        <p>MSE is commonly used when the error is expected <br> 
+            to follow a normal distribution.</p>       
+    </section>
+    
+    <section>
+        <h2>Loss functions: Cross-Entropy</h2>
+        <p>The <dfn>cross-entropy</dfn> loss function is the sum over all the<br>
+        output units of their log multiplied by the expected value. </p>
+        <table class='eqn plain'><tr>
+            <td>L(<b>y</b>, <b>a</b>)</td>
+            <td> = </td>
+            <td>- <span class="series"><sup>&nbsp;</sup>Σ<sub>k=1</sub></span>  
+                    <span>y<sub>k</sub> &middot; Log(a<sub>k</sub>)</span></td>
+        </tr></table>     
+        <p>Cross-entropy is a <em>metric</em> measuring the difference <br>
+         between two probability distributions.</p>
+    </section>
+    
+    <section>
+        <h2>Numerical Stability</h2>
+        <p>Like all relaxation optimizers, NN trained with back-propagation are
+        susceptible to numerical instabilities (runaway errors) if not tuned 
+        properly.</p>
+        <p>The learning rate (roughly, the amount that each example affects the
+        learned weights) must be lower than a particular threshold to ensure stability.</p>
+        <p>Softmax and Cross-Entropy display severe instabilities when used together naively.</p>
+    </section>
+    
+    <section>
+        <section>
+            <h2>Results</h2>
+            <table class='details'>
+                <tr><th>Layers</th><th>Activation/Loss</th><th>Training Examples</th><th>Test Error Rate</th></tr>
+                <tr><td>1 (784 &rarr; 10)</td><td>Logistic/MSE</td><td>60k</td><td>15.83%</td></tr>
+                <tr><td>1 (784 &rarr; 10)</td><td>Softmax/CE</td><td>60k</td><td>100.00%</td></tr>
+                <tr><td>1 (784 &rarr; 10)</td><td>Softmax+CE</td><td>60k</td><td>12.14%</td></tr>
+                <tr><td>1 (784 &rarr; 10)</td><td>Logistic/MSE</td><td>600k</td><td>10.58%</td></tr>
+                <tr><td>1 (784 &rarr; 10)</td><td>Softmax+CE</td><td>600k</td><td>8.85%</td></tr>
+                <tr><td>2 (784 &rarr; 300 &rarr; 10)</td><td>Logistic/Logistic/MSE</td><td>600k</td><td>8.76%</td></tr>
+                <tr><td>2 (784 &rarr; 300 &rarr; 10)</td><td>Logistic/Softmax+CE</td><td>600k</td><td>7.99%</td></tr>
+                <tr><td>2 (784 &rarr; 300 &rarr; 10)</td><td>Logistic/Softmax+CE</td><td>900k</td><td>6.76%</td></tr>
+            </table>
+        </section>
+        
+        <section>
+            <img src="results/out.log-mse-60k-010.crop.png">
+        </section>
+        
+        <section>
+            <img src="results/out.pass-softcross-60k-010.crop.png">
+        </section>
+        
+        <section>
+            <img src="results/out.pass-softcross-600k-001.crop.png">
+        </section>
+        
+        <section>
+            <img src="results/out.log-300pass-softcross-900k-0005.crop.png">
+        </section>
+            
+    </section>
+
+    </div>
+    </div>
+
+    <script src="reveal.js-3.2.0/lib/js/head.min.js"></script>
+    <script src="reveal.js-3.2.0/js/reveal.js"></script>
+    <script>
+        // Full list of configuration options available at:
+        // https://github.com/hakimel/reveal.js#configuration
+        Reveal.initialize({
+            width: 1280,
+            height: 720,
+            margin: 0.02,
+            minScale: 0.2,
+            maxScale: 1.0,
+            controls: true,
+            progress: true,
+            history: true,
+            slideNumber: true,
+            center: true,
+            transition: 'slide',            
+            math: {
+                mathjax: 'https://cdn.mathjax.org/mathjax/latest/MathJax.js',
+                config: 'TeX-AMS_HTML-full'  // See http://docs.mathjax.org/en/latest/config-files.html
+            },
+            dependencies: [
+                { src: 'reveal.js-3.2.0/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+                { src: 'reveal.js-3.2.0/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                { src: 'reveal.js-3.2.0/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                { src: 'reveal.js-3.2.0/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+                { src: 'reveal.js-3.2.0/plugin/zoom-js/zoom.js', async: true },
+                { src: 'reveal.js-3.2.0/plugin/notes/notes.js', async: true },
+                { src: 'reveal.js-3.2.0/plugin/print-pdf/print-pdf.js', async: true },
+                { src: 'reveal.js-3.2.0/plugin/math/math.js', async: true }
+            ]
+        });
+        
+        demoResetQuery();
+        
+        // crude hacks when printing slide deck
+        if (document.printing) {
+            // remove link slide (link is transient)
+            var linkslide = document.getElementById( 'link-slide' );
+            linkslide.parentNode.removeChild(linkslide);
+            // replace embedded iframes with explicit urls
+            for (var el of document.getElementsByTagName("iframe")) {
+                var a = document.createElement("a");
+                a.href = el.src;
+                a.innerHTML = el.src;
+                el.parentNode.replaceChild(a, el);
+            }
+            // annotate links with explicit urls
+            for (var sl of document.getElementsByClassName( 'ref-slide' )) {
+                for (var el of sl.getElementsByTagName("a")) {
+                    el.innerHTML += "<br>" + el.href;
+            }}
+        }
+    </script>
+
+</body>
+</html>
